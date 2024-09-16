@@ -103,6 +103,10 @@ def run_base_test(debug: bool):
     newart.set_name("VEX file")
     mycol.add_artefact(newart)
 
+    error, errmsg = mycol.is_valid()
+    if error > 0:
+        print("Collection not valid:\n{}".format(errmsg))
+        return False
     print("Collection\n{}\n".format(str(mycol)))
     return True
 
@@ -183,13 +187,33 @@ def check_artefact(tco, thisart:dict, debug):
                 errmsg.append("artefact: uuid not defined")
             else:
                 myart.replace_uuid(thisart[key])
-        # Add other keys to check
+        elif key == "name":
+            myart.set_name(thisart[key])
+        elif key == "description":
+            myart.set_description(thisart[key])
+        elif key == "author_name":
+            myart.set_author(thisart[key], None, None)
+        elif key == "author_org":
+            myart.set_author(None, thisart[key], None)
+        elif key == "author_email":
+            myart.set_author(None, None, thisart[key])
+        else:
+            if debug:
+                print("Unhandled key {}".format(key))
+
+
+    # Check if artefact is valid
+    newerr, newmsg = myart.is_valid()
+    errors += newerr
+    errmsg += newmsg
+
     if errors == 0:
         # Add artefact
         if not tco.add_artefact(myart):
             errors += 1
             errmsg.append("Error adding artefact to collection")
     return myart, errors, errmsg
+
 
 def check_format(art, thisformat:dict, debug):
     """Check format syntax.
@@ -215,7 +239,29 @@ def check_format(art, thisformat:dict, debug):
                 errmsg.append("artefact: uuid not defined")
             else:
                 myformat.replace_uuid(thisformat[key])
-        # Add other keys to check
+        elif key == "bom-identifier":
+            myformat.set_bomidentifier(thisformat[key])
+        elif key == "mediatype":
+            myformat.set_mediatype(thisformat[key])
+        elif key == "category":
+            myformat.set_category(thisformat[key])
+        elif key == "url":
+            myformat.set_url(thisformat[key], None)
+        elif key == "sigurl":
+            myformat.set_url(None, thisformat[key])
+        elif key == "hash":
+            myformat.set_hash(thisformat[key])
+        elif key == "size":
+            myformat.set_size(thisformat[key])
+        else:
+            print("Unknown key: {}".format(key))
+
+    # Check if the format is valid
+    newerr, newmsg = myformat.is_valid()
+    errors += newerr
+    errmsg += newmsg
+
+    # Add other keys to check
     if errors == 0:
         # Add artefact
         if not art.add_format(myformat):
@@ -247,7 +293,7 @@ def traversedict(tco, art, thisdict: dict, thiskey: str, debug):
                 debug=debug)
             errors += newerr
             errdict += newdict
-        if isinstance(thisdict[key], list):
+        elif isinstance(thisdict[key], list):
             if debug:
                 print("DEBUG: Going throught list named {}".format(key))
             for stuff in thisdict[key]:
@@ -276,6 +322,25 @@ def traversedict(tco, art, thisdict: dict, thiskey: str, debug):
                     debug=debug)
                 errors += newerr
                 errdict += newdict
+        elif key == "product_name":
+            tco.set_product(thisdict[key], None, None, None)
+        elif key == "product_version":
+            tco.set_product(None, thisdict[key], None, None)
+        elif key == "product_release_date":
+            tco.set_product(None, None, thisdict[key], None)
+        elif key == "product_tei_id":
+            tco.set_product(None, None, None, thisdict[key])
+        elif key == "version":
+            tco.set_version(thisdict[key])
+        elif key == "author_name":
+            tco.set_author(thisdict[key], None, None)
+        elif key == "author_org":
+            tco.set_author(None, thisdict[key], None)
+        elif key == "author_email":
+            tco.set_author(None, None, thisdict[key])
+        else:
+            if debug:
+                print("DEBUG: Unhandled key: {}".format(key))
 
                     
     if errors > 0:
@@ -324,41 +389,9 @@ def dict2object(colldict, debug: bool):
             errors += 1
             errmsg.append("Not supported specVersion")
 
-    # Check for UUID
-    if "UUID" not in colldict.keys():
-        errors += 1
-        errmsg.append("No UUID.")
-    else:
-        if not mycol.replace_uuid(colldict['UUID']):
-            errors += 1
-            errmsg.append("UUID parse error.")
-
-    # Check for product name
-    if "product_name" not in colldict.keys():
-        errors += 1
-        errmsg.append("No product_name.")
-    else:
-        if not mycol.set_product(
-                name=colldict['product_name'],
-                version=None,
-                releasedate=None,
-                teiid=None):
-            errors += 1
-            errmsg.append("product_name error.")
-
-    # Check product_version
-    if "product_version" not in colldict.keys():
-        errors += 1
-        errmsg.append("No product_version.")
-    else:
-        if not mycol.set_product(
-                name=None,
-                version=colldict['product_version'],
-                releasedate=None,
-                teiid=None):
-            errors += 1
-            errmsg.append("product_version error.")
-
+    newerr, newmsg = mycol.is_valid()
+    errors += newerr
+    errmsg += newmsg
 
     # Handle errors
     if errors > 0:
@@ -410,7 +443,7 @@ def validate_collection(
 
 
 def main():
-    """Run the command line TCP manager."""
+    """Run the command line TCO manager."""
     debug = False
 
     parser = argparse.ArgumentParser(
