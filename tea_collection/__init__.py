@@ -12,7 +12,7 @@ class collection:
     name = None
     collection = None
     uuid = None
-
+    # Vocabulary for the full collection, including artefacts and formats
     vocabulary = (
         "tcoFormat",
         "specVersion",
@@ -141,7 +141,7 @@ class collection:
         Empty string or None will not update values.
         All values None will return false
         """
-        if name is None and Org is None and email is None:
+        if name is None and org is None and email is None:
             return False
         if name is not None and name != "":
             self.collection["author_name"] = name
@@ -166,7 +166,7 @@ class collection:
             self.collection["product_tei_id"] = teiid
         return True
 
-    def set_collection_version(self, version: int):
+    def set_version(self, version: int):
         """Set collection version."""
         self.collection["version"] = version
         return True
@@ -191,6 +191,33 @@ class collection:
         if self.debug:
             print("DEBUG. Check_key: {} not in vocabulary".format(key))
         return False
+
+    def key_exists(self, key):
+        """Check if key exists in artefact."""
+        if key not in self.collection.keys():
+            return False
+        return True
+
+    def is_valid(self):
+        """Check if the collection (base) is valid."""
+        errors = 0
+        errmsg = list()
+
+        if not self.key_exists("product_name"):
+            errors += 1
+            errmsg.append("ERROR: Collection has no product name")
+        elif self.collection["product_name"] is None:
+            errors += 1
+            errmsg.append("ERROR: Collection has empty product name")
+        if self.collection["version"] is None:
+            errors += 1
+            errmsg.append("ERROR: Collection has no version")
+        if self.debug:
+            if errors > 0:
+                print("DEBUG: Collection is not valid.")
+            else:
+                print("DEBUG: Collection is valid. OK!")
+        return errors, errmsg
 
 
 class artefact:
@@ -264,6 +291,12 @@ class artefact:
             return True
         return False
 
+    def key_exists(self, key):
+        """Check if key exists in artefact."""
+        if key not in self.artefact.keys():
+            return False
+        return True
+
     def get_keylist(self) -> list():
         """Return list of all keys"""
         return self._valid_keys
@@ -324,6 +357,22 @@ class artefact:
         self.artefact["description"] = desc
         return True
 
+    def is_valid(self):
+        """Check if artefact is valid."""
+        errors = 0
+        errmsg = list()
+        if self.key_exists("name"):
+            if self.artefact["name"] is None:
+                errors += 1
+                errmsg.append("ERROR: Artefact name is None.")
+        else:
+            errors += 1
+            errmsg.append("ERROR: Artefact name is missing.")
+        if errors > 0:
+            if self.debug:
+                print("DEBUG: Artefact is not valid.")
+        return errors, errmsg
+
 
 class format():
     """A format object for an artefact."""
@@ -373,8 +422,22 @@ class format():
 
     def set_mediatype(self, mediatype: str):
         """Set media type of doc."""
-
         self.format["mediatype"] = mediatype
+        return True
+
+    def set_category(self, category: str):
+        """Set category of doc."""
+        self.format["category"] = category
+        return True
+
+    def set_hash(self, hash: str):
+        """Set hash of doc."""
+        self.format["hash"] = hash
+        return True
+
+    def set_size(self, size: str):
+        """Set size of doc."""
+        self.format["size"] = int(size)
         return True
     
     def set_attributes(self, hash: str, size: int):
@@ -394,6 +457,13 @@ class format():
             self.format["sigurl"] = sigurl
         return True
 
+    def set_bomidentifier(self, bomid: str):
+        """Set nom identifier."""
+        if bomid is None or bomid == "":
+            return False
+        self.format["bom-identifier"] = bomid
+        return True
+
     def valid_key(self, key):
         """Check if key is valid"""
         if key in self._valid_keys:
@@ -403,6 +473,12 @@ class format():
     def get_keylist(self) -> list():
         """Return list of all keys"""
         return self._valid_keys
+
+    def key_exists(self, key):
+        """Check if key exists in artefact."""
+        if key not in self.format.keys():
+            return False
+        return True
 
     def replace_uuid(self, uuidstr: str):
         """Set UUID (from import)."""
@@ -419,3 +495,21 @@ class format():
             return False
         self.format["uuid"] = uuidstr
         return True
+
+    def is_valid(self):
+        """Check if format is valid."""
+        errors = 0
+        errmsg = list()
+        if self.key_exists("url"):
+            if self.format["url"] is None:
+                errors += 1
+                errmsg.append("ERROR: Format has empty URL.")
+        else:
+            errors += 1
+            errmsg.append("ERROR: Format lacks URL.")
+
+        if errors > 0:
+            if self.debug:
+                print("DEBUG: Format is not valid.")
+
+        return errors, errmsg
