@@ -21,7 +21,7 @@
             "formats": [
                 {
                     "uuid": "320130b6-e64f-472b-b115-134dadcee218",
-                    "bom-identifier": null,
+                    "bom-identifier": "uuid:8234234-234-243-23-4",
                     "mediatype": "application/cyclonedx",
                     "category": null,
                     "url": "https://product.example.com/stuff.json",
@@ -34,7 +34,7 @@
                     "bom-identifier": null,
                     "mediatype": null,
                     "category": null,
-                    "url": null,
+                    "url": "gurka",
                     "sigurl": null,
                     "hash": null,
                     "size": 0
