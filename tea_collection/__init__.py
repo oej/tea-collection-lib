@@ -13,10 +13,53 @@ class collection:
     collection = None
     uuid = None
 
+    vocabulary = (
+        "tcoFormat",
+        "specVersion",
+        "UUID",
+        "product_name",
+        "product_version",
+        "product_release_date",
+        "product_tei_id",
+        "version",
+        "author_name",
+        "author_org",
+        "author_email",
+        "artefacts",
+        "uuid",
+        "name",
+        "description",
+        "author_name",
+        "author_org",
+        "author_email",
+        "formats",
+        "bom-identifier",
+        "mediatype",
+        "category",
+        "url",
+        "sigurl",
+        "hash",
+        "size",
+        "bom-identifier",
+        "mediatype",
+        "category",
+        "url",
+        "sigurl",
+        "hash",
+        "size",
+        "name",
+        "description",
+        "author_name",
+        "author_org",
+        "author_email",
+        "formats"
+    )
+
     def __init__(self, debug):
         """Initialise collection object"""
         self.debug = debug
         self.generate_uuid()
+        self.init_struct()
 
     def __str__(self):
         """Return a printable dnsobject in json."""
@@ -52,6 +95,24 @@ class collection:
             print("DEBUG: Generated new UUID: {}".format(str(self.uuid)))
         return True
 
+    def replace_uuid(self, uuidstr: str):
+        """Set UUID (from import)."""
+        import uuid
+        try:
+            self.uuid = uuid.UUID(uuidstr)
+        except TypeError:
+            if self.debug:
+                print("DEBUG: UUID failure: {}".format(uuidstr))
+            return False
+        except ValueError:
+            if self.debug:
+                print("DEBUG: UUID ValueError: {}".format(uuidstr))
+            return False
+        if self.debug:
+            print("DEBUG: Replaced artefact UUID to {}".format(uuidstr))
+        self.collection["uuid"] = uuidstr
+        return True
+
     def init_struct(self):
         """Initialise empty structure."""
         if self.collection is not None:
@@ -78,7 +139,10 @@ class collection:
         """Set author.
 
         Empty string or None will not update values.
+        All values None will return false
         """
+        if name is None and Org is None and email is None:
+            return False
         if name is not None and name != "":
             self.collection["author_name"] = name
         if org is not None and name != "":
@@ -87,7 +151,7 @@ class collection:
             self.collection["author_email"] = email
         return True
 
-    def set_product(self, name: str, version, releasedate: str, teiid: str):
+    def set_product(self, name: str, version: str, releasedate: str, teiid: str):
         """Set product metadata.
 
         Empty string or None will not update values.
@@ -118,16 +182,35 @@ class collection:
         if self.debug:
             print("DEBUG: Adding artefact - type {}".format(type(art)))
         return True
+    
+    def check_key(self, key):
+        """Check if key is in vocabulary."""
+    
+        if key in self.vocabulary:
+            return True
+        if self.debug:
+            print("DEBUG. Check_key: {} not in vocabulary".format(key))
+        return False
 
 
 class artefact:
     """TEA Collection artefact handling"""
     artefact = None
     debug = False
+    _valid_keys = (
+        "uuid",
+        "name",
+        "description",
+        "author_name",
+        "author_org",
+        "author_email",
+        "formats"
+    )
 
     def __init__(self, debug):
         """Initialise artefact object"""
         self.debug = debug
+        self.init_struct()
 
     def __str__(self):
         """Return a printable dnsobject in json."""
@@ -159,6 +242,32 @@ class artefact:
         self.artefact = artefact
         return artefact
 
+    def replace_uuid(self, uuidstr: str):
+        """Set UUID (from import)."""
+        import uuid
+        try:
+            _ = uuid.UUID(uuidstr)
+        except TypeError:
+            if self.debug:
+                print("DEBUG: UUID failure: {}".format(uuidstr))
+            return False
+        except ValueError:
+            if self.debug:
+                print("DEBUG: UUID ValueError: {}".format(uuidstr))
+            return False
+        self.artefact["uuid"] = uuidstr
+        return True
+
+    def valid_key(self, key):
+        """Check if key is valid"""
+        if key in self._valid_keys:
+            return True
+        return False
+
+    def get_keylist(self) -> list():
+        """Return list of all keys"""
+        return self._valid_keys
+
     def add_format(self, format):
         """Add format to artefact."""
         self.artefact["formats"].append(format)
@@ -175,7 +284,6 @@ class artefact:
                     .format(form))
             structlist.append(form.get_struct())
         return structlist
-
 
     def add_blank_format(self):
         """Add blank initialised format to artefact."""
@@ -221,12 +329,23 @@ class format():
     """A format object for an artefact."""
     format = None
     debug = False
+    _valid_keys = (
+        "uuid",
+        "bom-identifier",
+        "mediatype",
+        "category",
+        "url",
+        "sigurl",
+        "hash",
+        "size"
+    )
 
     def __init__(self, debug):
         """Initialise artefact format object"""
         self.debug = debug
         if self.debug:
             print("DEBUG: Initialising artefact format")
+        self.init_struct()
 
     def __str__(self):
         """Return a printable dnsobject in json."""
@@ -273,4 +392,30 @@ class format():
         self.format["url"] = url
         if sigurl is not None and sigurl != "":
             self.format["sigurl"] = sigurl
+        return True
+
+    def valid_key(self, key):
+        """Check if key is valid"""
+        if key in self._valid_keys:
+            return True
+        return False
+
+    def get_keylist(self) -> list():
+        """Return list of all keys"""
+        return self._valid_keys
+
+    def replace_uuid(self, uuidstr: str):
+        """Set UUID (from import)."""
+        import uuid
+        try:
+            _ = uuid.UUID(uuidstr)
+        except TypeError:
+            if self.debug:
+                print("DEBUG: UUID failure: {}".format(uuidstr))
+            return False
+        except ValueError:
+            if self.debug:
+                print("DEBUG: UUID ValueError: {}".format(uuidstr))
+            return False
+        self.format["uuid"] = uuidstr
         return True
